@@ -65,25 +65,25 @@ Lastly, this is geared torwards networking and games.
  * Note that I don't have and in-depth knowledge of Protobuf-net, so I maybe wrong in some cases.
 
 ```
-	{
-	  "type": "TestProj.SubPerson",
-	  "Id": "-1",
-	  "Name": null,
-	  "Address": {
-		"type": "TestProj.Address",
-		"Line1": "Flat 1",
-		"Line2": "The Meadows"
-	  }
-	}
-	AutoBuffer   Data: 00-07-FF-FF-FF-FF-0F-0E-06-46-6C-61-74-20-31-0B-54-68-65-20-4D-65-61-64-6F-77-73
-	AutoBuffer   Bytes: 27
-	AutoBuffer   Serialization Speed (x1000000): 00:00:02.2669464 
-	Protobuf-net Data: 0A-00-10-FF-FF-FF-FF-FF-FF-FF-FF-FF-01-22-15-0A-06-46-6C-61-74-20-31-12-0B-54-68-65-20-4D-65-61-64-6F-77-73
-	Protobuf-net Bytes: 36
-	Protobuf-net Serialization Speed (x1000000): 00:00:01.1997632
+{
+  "type": "TestProj.SubPerson",
+  "Id": "-1",
+  "Name": null,
+  "Address": {
+	"type": "TestProj.Address",
+	"Line1": "Flat 1",
+	"Line2": "The Meadows"
+  }
+}
+AutoBuffer   Data: 00-07-FF-FF-FF-FF-0F-0E-06-46-6C-61-74-20-31-0B-54-68-65-20-4D-65-61-64-6F-77-73
+AutoBuffer   Bytes: 27
+AutoBuffer   Serialization Speed (x1000000): 00:00:02.2669464 
+Protobuf-net Data: 0A-00-10-FF-FF-FF-FF-FF-FF-FF-FF-FF-01-22-15-0A-06-46-6C-61-74-20-31-12-0B-54-68-65-20-4D-65-61-64-6F-77-73
+Protobuf-net Bytes: 36
+Protobuf-net Serialization Speed (x1000000): 00:00:01.1997632
 
-	AutoBuffer   Deserialization Speed (x1000000): 00:00:05.5971242
-	Protobuf-net Deserialization Speed (x1000000): 00:00:02.0666347
+AutoBuffer   Deserialization Speed (x1000000): 00:00:05.5971242
+Protobuf-net Deserialization Speed (x1000000): 00:00:02.0666347
 ```
 
 #### TODO: 
