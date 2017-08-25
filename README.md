@@ -64,7 +64,7 @@ Lastly, this is geared torwards networking and games.
  * AutoBuffer is an incredibly early and undertested library compared to Protobuf-net
  * Note that I don't have and in-depth knowledge of Protobuf-net, so I maybe wrong in some cases.
 
-
+```
 	{
 	  "type": "TestProj.SubPerson",
 	  "Id": "-1",
@@ -84,6 +84,7 @@ Lastly, this is geared torwards networking and games.
 
 	AutoBuffer   Deserialization Speed (x1000000): 00:00:05.5971242
 	Protobuf-net Deserialization Speed (x1000000): 00:00:02.0666347
+```
 
 #### TODO: 
 * Serializer Helper Functions for Custom Serialization Methods
