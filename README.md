@@ -96,10 +96,7 @@ Lastly, this is geared torwards networking and games.
 * Add option to choose between writing flat primitives (int, long, short) over variable length primitives (varInt, ect)
 * Optimizations:
   * On The Fly Compression: If a pattern repeats its self x times write a counter for the amount of times the pattern repeats
-  * Multiple Bits and Booleans can be easily compressed down to 1 byte (Keep a counter)
-  * A few optimizations (compressing bitflags, and using varints/varshorts/ect)  which will allow the payload size to beat protobuf or rival it in the majority of cases.
-    * Var Primitives or Type to Map Attribute to (so I can say 'serialize this int as a short')
-	* If a pattern repeats it's self x times write a counter for the amount of times the pattern repeats
+  * Profile and Speed up Serialization to match Protobuf-net
 
 
 #### Example Mappings:
