@@ -342,7 +342,7 @@ namespace AutoBuffer {
 
         void AddTypesFromAttributes() {
             foreach (Type type in Assembly.GetExecutingAssembly().GetTypes()) {
-                object[] attributes = type.GetCustomAttributes(typeof(AutoBufferType), true);
+                object[] attributes = type.GetCustomAttributes(typeof(AutoBufferType), false);
                 if (attributes.Length == 0)
                     continue;
                 AutoBufferType headerInfo = attributes[0] as AutoBufferType;
