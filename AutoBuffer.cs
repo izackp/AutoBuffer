@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using CSharp_Library.Extensions;
@@ -75,6 +76,8 @@ namespace AutoBuffer {
                 type = type.GetGenericTypeDefinition();
             else if (type.IsEnum)
                 type = Enum.GetUnderlyingType(type);
+            else if (type.IsArray)
+                type = typeof(IEnumerable);
             return _typeCacheFactory.GetInstance(type);
         }
 
@@ -316,6 +319,7 @@ namespace AutoBuffer {
             { 8170, typeof(KeyValuePair<,>) },
             { 8169, typeof(KeyValuePairWritable<,>) },
             { 8168, typeof(List<>) },
+            { 8167, typeof(IEnumerable) },
         };
 
         Dictionary<Type, int> _typeHeaderMap;
