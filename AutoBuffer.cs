@@ -147,17 +147,15 @@ namespace AutoBuffer {
         }
 
         bool IsTypeIndexed(Type type) {
-            List<KeyValuePair<int, MemberInfoWithMeta>> indexedMemberInfo = new List<KeyValuePair<int, MemberInfoWithMeta>>(20);
-
             var flags = (BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
-            IEnumerable<MemberInfo> properties = type.GetProperties(flags).Where(x => x.CanRead);
-            foreach (MemberInfo info in properties) {
+            IEnumerable<PropertyInfo> properties = type.GetProperties(flags).Where(x => x.CanRead);
+            foreach (PropertyInfo info in properties) {
                 if (info.IsDefined(typeof(Index), true))
                     return true;
             }
 
-            IEnumerable<MemberInfo> fields = type.GetFields(flags).Where(x => !x.Name.EndsWith("k__BackingField") && x.IsStatic == false);
-            foreach (MemberInfo info in fields) {
+            IEnumerable<FieldInfo> fields = type.GetFields(flags).Where(x => !x.Name.EndsWith("k__BackingField") && x.IsStatic == false);
+            foreach (FieldInfo info in fields) {
                 if (info.IsDefined(typeof(Index), true))
                     return true;
             }
@@ -173,7 +171,7 @@ namespace AutoBuffer {
             MemberInfo[] fields = type.GetFields(flags).Where(x => !x.Name.EndsWith("k__BackingField") && x.IsStatic == false).ToArray();
             MemberInfo[] allValues = ArrayExt.Combine(properties, fields);
             foreach (MemberInfo property in allValues) {
-                IEnumerable<Attribute> attributes = property.GetCustomAttributes();
+                object[] attributes = property.GetCustomAttributes(true);
                 int index = -1;
                 bool skipType = false;
                 bool skipIsNull = false;
@@ -226,7 +224,7 @@ namespace AutoBuffer {
             MemberInfo[] allValues = ArrayExt.Combine(properties, fields);
 
             foreach (MemberInfo property in allValues) {
-                IEnumerable<Attribute> attributes = property.GetCustomAttributes();
+                object[] attributes = property.GetCustomAttributes(true);
                 MemberInfoWithMeta memberInfo = new MemberInfoWithMeta();
                 memberInfo.Info = property;
                 bool ignore = false;
@@ -325,7 +323,6 @@ namespace AutoBuffer {
         public Serializer() {
 
             _entities.Builder = BuildEntityMapper2;
-            Dictionary<Type, TypeCache> poolData = _typeCacheFactory.PoolData; //Avoid retain cycle
             _typeCacheFactory.Builder = (Type type) => {
                 TypeCache result = TypeCache.Builder(type, _typeHeaderMap.Keys);
                 return result;

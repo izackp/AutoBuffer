@@ -258,16 +258,14 @@ namespace AutoBuffer {
 
         //TODO: Optimize by checking for other types with length method (IList, ect) before using this
         void SerializeList(Type type, object obj, DataWriter writer) {
-            var itemType = Reflection.GetListItemType(type);
             var enumerable = (IEnumerable)obj;
-            int lengthPos = writer.Position;
-            ulong length = 0;
+            int length = 0;
             
             foreach (object eachObj in enumerable) {
                 length += 1;
             }
 
-            writer.WriteVarNum(length);
+            writer.WriteVarNum((ulong)length);
 
             foreach (object eachObj in enumerable) {
                 Serialize(eachObj, writer);
@@ -279,7 +277,7 @@ namespace AutoBuffer {
             Type KeyValueType = kvpType.MakeGenericType(K, T);
 
             //We force the creation of an entity mapper even though KeyValuePair only has public getters
-            EntityMapper mapper = GetEntityMapper(KeyValueType, true, false, false, true);
+            GetEntityMapper(KeyValueType, true, false, false, true);
             SerializeList(KeyValueType, dict, writer);
         }
 
