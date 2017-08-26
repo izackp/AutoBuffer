@@ -24,8 +24,8 @@ namespace AutoBuffer {
             return Deserialize(type, reader, true, true);
         }
 
-        public T ToObject<T>(byte[] doc) {
-            return (T)ToObject(typeof(T), doc);
+        public T ToObject<T>(byte[] bytes) {
+            return (T)ToObject(typeof(T), bytes);
         }
 
         public object ToObject(ushort header, byte[] bytes) {
