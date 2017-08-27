@@ -67,7 +67,7 @@ namespace AutoBuffer {
                 if (TypeMapper.TryGetValue(type, out resultType))
                     type = resultType;
             } else if (skipNullByte == false && typeCache.CanBeNull()) {
-                bool isNull = !reader.ReadBoolean();
+                bool isNull = reader.ReadBoolean();
                 if (isNull)
                     return null;
             }

@@ -96,7 +96,7 @@ namespace AutoBuffer {
             if (typeCache.HasChildTypes && skipMetaData == false) {
                 WriteType(type, obj, writer, typeCache.IsGeneric);
             } else if (skipNullByte == false && typeCache.CanBeNull()) {
-                writer.WriteBoolean((obj != null));
+                writer.WriteBoolean((obj == null));
             }
 
             if (obj == null)
