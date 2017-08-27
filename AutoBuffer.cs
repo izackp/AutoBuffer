@@ -75,7 +75,7 @@ namespace AutoBuffer {
                 type = type.GetGenericTypeDefinition();
             else if (type.IsEnum)
                 type = Enum.GetUnderlyingType(type);
-            return _typeCacheFactory.GetInstance(type);
+            return _typeCacheFactory.GetOrBuildInstance(type);
         }
 
         public EntityMapper GetEntityMapper(Type type, bool build = true) {
