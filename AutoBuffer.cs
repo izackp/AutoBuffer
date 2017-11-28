@@ -120,9 +120,16 @@ namespace AutoBuffer {
             foreach (MemberInfoWithMeta memberWithMeta in members) {
                 MemberInfo memberInfo = memberWithMeta.Info;
                 string name = memberInfo.Name;
+                GenericGetter getter = null;
+                GenericSetter setter = null;
 
-                GenericGetter getter = Reflection.CreateGenericGetter(type, memberInfo);
-                GenericSetter setter = Reflection.CreateGenericSetter(type, memberInfo);
+                try {
+                    getter = Reflection.CreateGenericGetter(type, memberInfo);
+                    setter = Reflection.CreateGenericSetter(type, memberInfo);
+                }
+                catch (Exception ex) {
+                    throw new Exception("Could not generate getter and setter for type: " + type.ToString() + " member: " + name);
+                }
 
                 if (ignoreSetter == false)
                     if (getter == null || setter == null)
