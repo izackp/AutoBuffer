@@ -25,14 +25,15 @@ Lastly, this is geared torwards networking and games.
 #### Limitations:
 * 16mb Write Buffer
 * Needs a public parameterless constructor
-* No generic class in generic classes: class MyClass<T> { class myInnerClass<R> {}}
+* No generic class in generic classes. For example: class MyClass<T> { class myInnerClass<R> {}}
 * Arrays, Lists, and Dictionarys are limited to 65,535 elements (To be fixed)
 * Limited to 8191 types (except for generic subtypes). If you want to use bits in the type to determine the size of your payload.
-* Datetime locality is removed (might change this)
+* Datetime locality is removed (DateTime and TimeSpan is serialized as seconds(long) and nanoseconds(int) from unix epoch)
+* Only supports UTF8 strings
 * Does not maintain shared references (a new instance will be made for each deserialized member)
   * It's possible to work around this
 * No versioning or any 'extras'
-* Will throw if it tries to serialize an type without a mapping. Such as when you use a child type for a parent type.
+* Will throw if it tries to serialize a type without a mapping. Such as when you use a child type for a parent type.
   * I left this in so it's easy to find classes without mappings.
 * Relies on CSharp-Library which I know some people won't like.
 * This is pretty much the only documentation
@@ -51,7 +52,7 @@ Lastly, this is geared torwards networking and games.
 
 #### How does this compare to Protobuf-net?
  * Serialization and deserialization speed is 3x-4x faster in Protobuf-net. I have yet to do any profiling and optimizations for AutoBuffer.
- * If there are any issues you can always use custom serializaation methods. Wih protobuf you need to jump through hoops (use a surrogate type; ect).
+ * If there are any issues you can always use custom serialization methods. With protobuf you need to jump through hoops (use a surrogate type; ect).
  * Protobuf has a bigger payload (size) in most cases.
  * With Protobuf you need to know the type of your data to deserialize it.
  * Protobuf has more class decorating attributes which can get annoying to look at.
