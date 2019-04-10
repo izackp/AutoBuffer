@@ -8,30 +8,29 @@ using System.Reflection;
 namespace AutoBuffer {
     public partial class Serializer {
 
-        public object ToObject(Type type, byte[] bytes) {
+        public object ToObject(byte[] bytes, Type type = null, bool typeIsPrefixed = true) {
             if (bytes == null)
                 throw new ArgumentNullException("bytes");
+            if (type == null)
+                type = typeof(object);
 
-            DataReader reader = new DataReader(bytes);
-            return Deserialize(type, reader);
+            var reader = new DataReader(bytes);
+            if (typeIsPrefixed) {
+                type = ReadType(reader, true, true);
+                return Deserialize(type, reader, true, true);
+            }
+            return Deserialize(type, reader, false, true);
         }
 
-        public object ToObject(byte[] bytes) {
-            if (bytes == null)
-                throw new ArgumentNullException("bytes");
-
-            DataReader reader = new DataReader(bytes);
-            Type type = ReadType(reader, true, true);
-            return Deserialize(type, reader, true, true);
+        public T ToObject<T>(byte[] bytes, bool typeIsPrefixed = true) {
+            return (T)ToObject(bytes, typeof(T), typeIsPrefixed);
         }
 
-        public T ToObject<T>(byte[] bytes) {
-            return (T)ToObject(typeof(T), bytes);
-        }
-
+        //Use after parsing out header + size info from network data
         public object ToObject(ushort header, byte[] bytes) {
             Type type = HeaderToType(header);
-            return ToObject(type, bytes);
+            var reader = new DataReader(bytes);
+            return Deserialize(type, reader, true, true);
         }
 
         ///
@@ -54,24 +53,27 @@ namespace AutoBuffer {
             return baseType.MakeGenericType(subTypes);
         }
 
-        object Deserialize(Type type, DataReader reader, bool skipMetaData = false, bool skipNullByte = false) {
-            return Deserialize(type, reader, GetTypeCache(type), skipMetaData, skipNullByte);
-        }
+        object Deserialize(Type fieldType, DataReader reader, bool skipMetaData = false, bool skipNullByte = false) {
 
-        object Deserialize(Type type, DataReader reader, TypeCache typeCache, bool skipMetaData = false, bool skipNullByte = false) {
+            TypeCache typeCache = GetTypeCache(fieldType);
 
-            if (typeCache.HasChildTypes && skipMetaData == false) {
-                type = ReadType(reader, typeCache.IsGeneric);
-                if (type == null)
-                    return null;
-                Type resultType = null;
-                if (TypeMapper.TryGetValue(type, out resultType))
-                    type = resultType;
-            } else if (skipNullByte == false && typeCache.CanBeNull()) {
+            if (skipNullByte == false && typeCache.CanBeNull()) {
                 bool isNull = reader.ReadBoolean();
                 if (isNull)
                     return null;
             }
+
+            Type type = fieldType;
+            if (skipMetaData == false && typeCache.HasChildTypes) {
+                type = ReadType(reader, typeCache.IsGeneric);
+                if (type == null)
+                    return null;
+                Type resultType = null;
+                if (TypeMapper.TryGetValue(type, out resultType)) {
+                    type = resultType;
+                }
+                typeCache = GetTypeCache(type);
+            } 
 
             if (type == null)
                 return null;
@@ -97,11 +99,8 @@ namespace AutoBuffer {
             }
 
             if (typeCache.IsList) {
-                if (type == typeof(object))
+                if (type == typeof(object)) //Still no idea why
                     return DeserializeArray(typeof(object), reader);
-
-                if (type.IsArray)
-                    return DeserializeArray(type.GetElementType(), reader);
 
                 return DeserializeList(type, reader);
             }
@@ -197,7 +196,7 @@ namespace AutoBuffer {
         }
 
         IEnumerable DeserializeList(Type type, DataReader reader) {
-            var itemType = Reflection.GetListItemType(type);
+            var itemType = Reflection.GetListItemType(type); //Note: Ignores IList, while we don't in serialize
             var enumerable = (IEnumerable)Reflection.CreateInstance(type);
             IList list = enumerable as IList;
             int length = (int)reader.ReadVarNum();
@@ -250,7 +249,7 @@ namespace AutoBuffer {
             }
 
             foreach (MemberMapper member in entity.Members) {
-                object value = Deserialize(member.DataType, reader, member.Cache, member.SkipType, member.SkipIsNull);
+                object value = Deserialize(member.DataType, reader, member.SkipType, member.SkipIsNull);
                 member.Setter(obj, value);
             }
         }

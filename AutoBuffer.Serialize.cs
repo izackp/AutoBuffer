@@ -19,38 +19,27 @@ namespace AutoBuffer {
         }
 
         /// <summary>
-        /// Serializes obj to byte[]. Appends type to beginning of data.
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns>Serialized Data</returns>
-        public byte[] FromObject(object obj) {
-            if (obj == null)
-                throw new ArgumentNullException("obj");
-
-            DataWriter writer = GetDataWriter();
-            writer.Reset();
-            Type type = obj.GetType();
-            TypeCache typeCache = GetTypeCache(type);
-            WriteType(type, obj, writer, typeCache.IsGeneric, true);
-            Serialize(type, obj, writer, typeCache, true, true);
-            return _writer.CopyBytes();
-        }
-
-        /// <summary>
-        /// Serializes obj to byte[]. Does not append type to beginning of data.
+        /// Serializes obj to byte[]. Passing Type can be used to avoid prefixing type to beginning of data. Important to match type parameter on deserialization.
         /// </summary>
         /// <param name="type"></param>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public byte[] FromObject(Type type, object obj) {
+        public byte[] FromObject(object obj, Type type = null, bool prefixTypeData = true) {
             if (obj == null)
                 throw new ArgumentNullException("obj");
             if (type == null)
-                throw new ArgumentNullException("type");
+                type = typeof(object);
 
             DataWriter writer = GetDataWriter();
             writer.Reset();
-            Serialize(obj, writer);
+            if (prefixTypeData) {
+                type = obj.GetType(); //Has to match because whatever we prefix we will try to deserialize //TODO: Double check
+                TypeCache typeCache = GetTypeCache(type);
+                WriteType(type, obj, writer, typeCache.IsGeneric, true);
+                Serialize(type, obj, writer, true, true);
+            } else {
+                Serialize(type, obj, writer, false, true);
+            }
             return writer.CopyBytes();
         }
 
@@ -81,32 +70,32 @@ namespace AutoBuffer {
                 }
             }
         }
-
-        public void Serialize(object obj, DataWriter writer, bool skipMetaData = false, bool skipNullByte = false) {
-            Type type = (obj != null) ? obj.GetType() : null;
-            TypeCache typeCache = GetTypeCache(type);
-            Serialize(type, obj, writer, typeCache, skipMetaData, skipNullByte);
-        }
-
-        public void Serialize(Type type, object obj, DataWriter writer, TypeCache typeCache, bool skipMetaData = false, bool skipNullByte = false) {
+        
+        //We need to pass the original field type. If the type is object, interface or has children then the metadata needs to be written
+        public void Serialize(Type fieldType, object obj, DataWriter writer, bool skipMetaData = false, bool skipNullByte = false) {
             
             if (obj == null && skipNullByte) {
                 throw new Exception("skipNullByte option is set AND object to be written is null. No way to deserialize since deserializer will assume non-null value.");
             }
 
-            if (typeCache.HasChildTypes && skipMetaData == false) {
-                WriteType(type, obj, writer, typeCache.IsGeneric);
-            } else if (skipNullByte == false && typeCache.CanBeNull()) {
+            Type type = (obj != null) ? obj.GetType() : null;
+            TypeCache typeCache = GetTypeCache(type);
+            TypeCache fieldCache = GetTypeCache(fieldType);
+
+            if (skipNullByte == false && fieldCache.CanBeNull()) {
                 writer.WriteBoolean((obj == null));
             }
 
             if (obj == null)
                 return;
 
+            if (skipMetaData == false && fieldCache.HasChildTypes) {
+                WriteType(type, obj, writer, typeCache.IsGeneric);
+            }
+
             if (typeCache.IsNullable) {
                 Type[] types = Reflection.GetGenericArgumentsExt(type);
-                TypeCache genericCache = GetTypeCache(types[0]);
-                Serialize(types[0], obj, writer, genericCache);
+                Serialize(types[0], obj, writer);
                 return;
             }
 
@@ -132,25 +121,38 @@ namespace AutoBuffer {
             }
 
             if (typeCache.IsList) {
-                if (type == typeof(object))
+                if (type == typeof(object)) //TODO: I don't get this
                     SerializeArray(type, obj, writer);
-
                 else if (type.IsArray)
                     SerializeArray(type.GetElementType(), obj, writer);
-
+                else if (typeof(IList<>).IsAssignableFrom(type))
+                {
+                    Type[] genericArguments = Reflection.GetGenericArgumentsExt(type);
+                    SerializeIEnumerable(genericArguments[0], obj as IList, writer);
+                }
+                else if (typeof(IEnumerable<>).IsAssignableFrom(type))
+                {
+                    Type[] genericArguments = Reflection.GetGenericArgumentsExt(type);
+                    SerializeIEnumerable(genericArguments[0], obj as IEnumerable, writer);
+                }
+                else if (typeof(IList).IsAssignableFrom(type))
+                {
+                    var list = obj as IList;
+                    SerializeIList(typeof(object), list, writer);
+                }
+                else if (typeof(IEnumerable).IsAssignableFrom(type))
+                    SerializeIEnumerable(typeof(object), obj as IEnumerable, writer);
                 else
-                    SerializeList(type, obj, writer);
+                    throw new Exception("Unexpected list type: " + type.ToString());
                 return;
             }
 
-            if (typeCache.IsGeneric) {
-                if (obj is IDictionary) {
-                    Type[] genericArguments = Reflection.GetGenericArgumentsExt(type);
-                    Type k = genericArguments[0];
-                    Type t = genericArguments[1];
-                    SerializeDictionary(k, t, (IDictionary)obj, writer);
-                    return;
-                }
+            if (typeCache.IsGeneric && obj is IDictionary) {
+                Type[] genericArguments = Reflection.GetGenericArgumentsExt(type);
+                Type k = genericArguments[0];
+                Type t = genericArguments[1];
+                SerializeDictionary(k, t, (IDictionary)obj, writer);
+                return;
             }
 
             SerializeObject(type, obj, writer);
@@ -253,13 +255,20 @@ namespace AutoBuffer {
             writer.WriteVarNum((ulong)arr.Length);
 
             foreach (object eachObj in arr) {
-                Serialize(eachObj, writer);
+                Serialize(type, eachObj, writer);
+            }
+        }
+
+        void SerializeIList(Type type, IList obj, DataWriter writer) {
+            writer.WriteVarNum((ulong)obj.Count);
+
+            foreach (object eachObj in obj) {
+                Serialize(type, eachObj, writer);
             }
         }
 
         //TODO: Optimize by checking for other types with length method (IList, ect) before using this
-        void SerializeList(Type type, object obj, DataWriter writer) {
-            var enumerable = (IEnumerable)obj;
+        void SerializeIEnumerable(Type type, IEnumerable enumerable, DataWriter writer) {
             int length = 0;
             
             foreach (object eachObj in enumerable) {
@@ -269,7 +278,7 @@ namespace AutoBuffer {
             writer.WriteVarNum((ulong)length);
 
             foreach (object eachObj in enumerable) {
-                Serialize(eachObj, writer);
+                Serialize(type, eachObj, writer);
             }
         }
 
@@ -279,7 +288,11 @@ namespace AutoBuffer {
 
             //We force the creation of an entity mapper even though KeyValuePair only has public getters
             GetEntityMapper(KeyValueType, true, false, false, true);
-            SerializeList(KeyValueType, dict, writer);
+            writer.WriteVarNum((ulong)dict.Count);
+
+            foreach (object eachPair in dict) {
+                Serialize(KeyValueType, eachPair, writer);
+            }
         }
 
         void SerializeObject(Type type, object obj, DataWriter writer) {
@@ -292,7 +305,7 @@ namespace AutoBuffer {
 
             foreach (MemberMapper member in entity.Members) {
                 object value = member.Getter(obj);
-                Serialize(member.DataType, value, writer, member.Cache, member.SkipType, member.SkipIsNull);
+                Serialize(member.DataType, value, writer, member.SkipType, member.SkipIsNull);
             }
         }
     }

@@ -145,8 +145,7 @@ namespace AutoBuffer {
                     Getter = getter,
                     Setter = setter,
                     SkipIsNull = memberWithMeta.SkipIsNull,
-                    SkipType = memberWithMeta.SkipType,
-                    Cache = GetTypeCache(dataType)
+                    SkipType = memberWithMeta.SkipType
                 };
                 mapper.Members.Add(member);
             }
@@ -325,12 +324,15 @@ namespace AutoBuffer {
             { 8169, typeof(KeyValuePairWritable<,>) },
             { 8168, typeof(List<>) },
             { 8167, typeof(IEnumerable) },
+            { 8166, typeof(object) },
         };
 
         Dictionary<Type, int> _typeHeaderMap;
 
-        public Serializer() {
-
+        public Serializer(Assembly assemblyWithModels) {
+            if (assemblyWithModels == null) {
+                assemblyWithModels = Assembly.GetExecutingAssembly();
+            }
             _entities.Builder = BuildEntityMapper2;
             _typeCacheFactory.Builder = (Type type) => {
                 TypeCache result = TypeCache.Builder(type, _typeHeaderMap.Keys);
@@ -345,12 +347,12 @@ namespace AutoBuffer {
                 _typeHeaderMap.Add(kvp.Value, kvp.Key);
             }
 
-            AddTypesFromAttributes();
+            AddTypesFromAttributes(assemblyWithModels);
             BuildTypeCache();
         }
 
-        void AddTypesFromAttributes() {
-            foreach (Type type in Assembly.GetExecutingAssembly().GetTypes()) {
+        void AddTypesFromAttributes(Assembly assemblyWithModels) {
+            foreach (Type type in assemblyWithModels.GetTypes()) {
                 object[] attributes = type.GetCustomAttributes(typeof(AutoBufferType), false);
                 if (attributes.Length == 0)
                     continue;
