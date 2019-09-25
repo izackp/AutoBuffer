@@ -39,7 +39,7 @@ Lastly, this is geared torwards networking and games.
 * This is pretty much the only documentation
 
 #### Notes:
-* The Int16 Header: This serializer always starts with a ushort of the type, and is designed to embed size bit flags into this header. 
+* The Int16 Header: This serializer always starts with a ushort of the type, and is designed to allow you to embed size bit flags into this header. 
   * If you limit the type id to numbers no bigger than 8191 then you will have 2 bits in the header to specify how many additional bytes to read to find the length of your payload.
   * 0 Flags == 0 More bytes of data to read. 2 Flags == 2 more bytes which could read as 0xFFFF which will mean the payload is ‭65535‬ bytes longer then what you've already read.
   * So your socket code will go like this -> Read 2 Bytes. Extract Size Length. Read 1*NumOfFlags bytes. Convert Bytes to size. Read X (size) Bytes (payload);
