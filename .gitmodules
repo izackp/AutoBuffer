@@ -1,0 +1,3 @@
+[submodule "ThirdParty/CSharp-Library"]
+	path = ThirdParty/CSharp-Library
+	url = https://github.com/izackp/C-Sharp-Library.git

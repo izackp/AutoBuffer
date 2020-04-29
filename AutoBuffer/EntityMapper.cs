@@ -26,7 +26,6 @@ namespace AutoBuffer {
     public class MemberMapper {
 
         public string Name { get; set; }
-        public TypeCache Cache { get; set; }
         public Type DataType { get; set; }
         public bool SkipType { get; set; }
         public bool SkipIsNull { get; set; }
@@ -73,13 +72,15 @@ namespace AutoBuffer {
         }
     }
 
+    //Need a better name. Cache makes it seem like this is unnecessary. This is part of the relationship mapping process.
     public struct TypeCache {
         TypeCacheFlags Flags;
 
         public static TypeCache Builder(Type type, ICollection<Type> allTypes) {
             TypeCache result = default(TypeCache);
             result.IsNullable = Reflection.IsNullable(type);
-            result.IsList = Reflection.IsList(type);
+            Reflection.ListType listType = Reflection.FindListType(type);
+            result.IsList = listType != Reflection.ListType.None;
             result.IsEnum = type.IsEnum;
             result.IsGeneric = type.IsGenericType;
             result.IsClass = type.IsClass;
@@ -88,12 +89,25 @@ namespace AutoBuffer {
                 return result;
 
             bool hasChild = false;
-            foreach (Type storedType in allTypes) {
-                if (storedType == type)
-                    continue;
-                if (storedType.IsSubclassOf(type)) {
-                    hasChild = true;
-                    break;
+            if (type == typeof(object)) {
+                hasChild = true; //TODO: Check if this is necessary, could be set true below
+            } else if (type.IsInterface) {
+                foreach (Type storedType in allTypes) {
+                    if (storedType == type)
+                        continue;
+                    if (type.IsAssignableFrom(storedType)) {
+                        hasChild = true;
+                        break;
+                    }
+                }
+            } else {
+                foreach (Type storedType in allTypes) {
+                    if (storedType == type)
+                        continue;
+                    if (storedType.IsSubclassOf(type)) {
+                        hasChild = true;
+                        break;
+                    }
                 }
             }
 
